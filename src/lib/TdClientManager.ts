@@ -113,7 +113,7 @@ class TdClientManager {
 			device_model: 'Web Browser',
 			system_version: 'web',
 			application_version: '1.0.0',
-			use_file_database: true,
+			use_file_database: false,
 			use_chat_info_database: true,
 			use_message_database: true,
 			use_secret_chats: true
@@ -121,6 +121,30 @@ class TdClientManager {
 		this.tdClient.send(tdlibParameters as TdObject).then((r) => {
 			console.log(r);
 		});
+		await this.tdClient
+			.send({
+				'@type': 'getOption',
+				name: 'use_ipv6'
+			} as TdApi.getOption as unknown as TdObject)
+			.then((r) => {
+				console.log(r);
+			});
+		await this.tdClient
+			.send({
+				'@type': 'getOption',
+				name: ''
+			} as TdApi.getOption as unknown as TdObject)
+			.then((r) => {
+				console.log(r);
+			});
+		await this.tdClient
+			.send({
+				'@type': 'getOption',
+				name: 'use_ipv6'
+			} as TdApi.getOption as unknown as TdObject)
+			.then((r) => {
+				console.log(r);
+			});
 	}
 
 	public setCallback(callback: (update: TdObject) => void) {

@@ -34,6 +34,9 @@
 	let onMainBtnClick = async () => {
 		console.log(otpSent);
 		console.log(otpNumber);
+		if(phoneNumber.length === 10){
+			phoneNumber = '91'+phoneNumber;
+		}
 		let formattedPhone = (phoneNumber.includes('+')) ?  phoneNumber : '+'+phoneNumber;
 		if (!otpSent && phoneNumber.length >= 10) {
 			console.log("Sending otp to"+formattedPhone);

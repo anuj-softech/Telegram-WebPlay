@@ -55,9 +55,11 @@
 	}
 
 	onMount(async () => {
-		while (!tdClientManager.isInitialized()) {
+		let retry = 10000;
+		while (!tdClientManager.isInitialized() && retry > 0) {
 			await new Promise(resolve => setTimeout(resolve, 100));
 			console.log('Waiting for TDLib to initialize...');
+			retry--;
 		}
 		pushState('', {
 			showChat: false
@@ -81,6 +83,18 @@
 			showChat: false
 		});
 	}
+
+	function logout() {
+		if (confirm('Are you sure you want to logout?')) {
+			tdClientManager.getClient().send({
+				'@type': 'logOut'
+			} as TdApi.logOut as TdObject).then((r) => {
+				console.log(r);
+				goto('../login', { replaceState: true });
+			});
+			console.log('User confirmed the action.');
+		}
+	}
 </script>
 
 <div class="h-dvh w-dvw flex flex-col bg-gradient-to-b from-[#334242] to-[#181918]">
@@ -88,6 +102,7 @@
 		class="px-9 pt-8 rounded-b-2xl absolute top-0 w-full pb-4 flex flex-row items-center gap-4 md:gap-10 backdrop-blur-2xl bg-[#22334422]">
 		<img class="shadow-[0_0_100px_#A7BA88] object-cover rounded-full size-10" src="./logo.svg" alt="logo">
 		<p class="text-white text-3xl pl-2 font-semibold">Chats</p>
+		<button class="h-10 absolute bg-[#00000022] p-2 rounded-2xl text-red-200 right-10" onclick={logout}>Logout</button>
 	</div>
 	<div class="overflow-y-scroll pt-22 flex  flex-col">
 		<div class="p-4 gap-4 flex flex-col">

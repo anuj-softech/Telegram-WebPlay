@@ -29,32 +29,16 @@
 		return Promise.reject(new Error('Player is not initialized'));
 	}
 
-	function setCallBack() {
-		tdClientManager.setCallback((update) => {
-				if (update['@type'] === 'updateFile') {
-					console.log(update);
-					const updateFile = (update as unknown as TdApi.updateFile).file;
-					if (updateFile.local.is_downloading_active) {
-						console.log('Download prog:', updateFile.local.path, updateFile.local.downloaded_size);
-						status = 'Loading video part ' + Math.round(updateFile.local.downloaded_prefix_size / 1024) + ' KB';
-					} else if (!updateFile.local.is_downloading_active && updateFile.local.downloaded_size > 100) {
-						console.log('Download completed:', updateFile.local.path);
-						status = 'Playing video part in VLC ' + Math.round(updateFile.local.downloaded_prefix_size / 1024) + ' KB';
-					}
-				}
-			}
-		);
-	}
-
 	onMount(async () => {
 		console.log(tdClientManager.isInitialized() ? 'TDLib is initialized' : 'TDLib is not initialized');
 		while (!tdClientManager.isInitialized()) {
 			await new Promise(resolve => setTimeout(resolve, 400));
 		}
-		tdPlayer = new PlayerUtils(tdClientManager, currentPlayMessage);
+		tdPlayer = new PlayerUtils(tdClientManager, currentPlayMessage,(sta:string)=>{
+			status = sta;
+		});
 		tdPlayer.setChunkSize(chunkSize);
 		window.readCurrentVideoFile = readCurrentVideoFile;
-		setCallBack();
 		console.log('Player is initialized');
 	});
 

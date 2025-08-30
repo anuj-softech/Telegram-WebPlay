@@ -1,7 +1,7 @@
 export default {
     onUpdate: ((u:never) => console.log(u)), // Callback for all incoming updates.
     instanceName: 'tdlib', // Name of the TDLib instance. Currently only one instance of TdClient with a given name is allowed. All but one instances with the same name will be automatically closed. Usually, the newest non-background instance is kept alive. Files will be stored in an IndexedDb table with the same name.
-    isBackground: false, // Pass true, if the instance is opened from the background.
+    isBackground: true, // Pass true, if the instance is opened from the background.
     jsLogVerbosityLevel: 'info', // The initial verbosity level of the JavaScript part of the code (one of 'error', 'warning', 'info', 'log', 'debug').
     logVerbosityLevel: 2, // The initial verbosity level for the TDLib internal logging (0-1023).
     useDatabase: true, // Pass false to use TDLib without database and secret chats. It will significantly improve loading time, but some functionality will be unavailable.

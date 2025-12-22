@@ -93,6 +93,10 @@ export class PlayerUtils {
 		if(offset+count > this.filesize){
 			count = 0;
 		}
+		await this.client.send({
+			'@type': 'cancelDownloadFile',
+			file_id: file_id,
+		} as TdApi.cancelDownloadFile as TdObject);
 
 		await this.client.send({
 			'@type': 'downloadFile',

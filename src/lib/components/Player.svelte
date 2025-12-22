@@ -3,10 +3,9 @@
 	import { onMount } from 'svelte';
 	import { type TdApi } from '$lib/types/td_api';
 	import { PlayerUtils } from '$lib/utils/PlayerUtils';
-
-	import type { LayoutLoad } from '../$lib/types';
 	import type { TdObject } from 'tdweb';
 	import MessageItemWrapper from '$lib/components/messages/MessageItemWrapper.svelte';
+	import { error } from '@sveltejs/kit';
 
 	let chunkSize = $state(
 		typeof localStorage !== "undefined"
@@ -14,8 +13,7 @@
 			: 100000
 	);
 
-	let { data } = $props<{ data: LayoutLoad }>();
-	let tdClientManager: TdClientManager = data.tdClientManager as TdClientManager;
+	let {tdClientManager}:{tdClientManager:TdClientManager} = $props();
 
 	let currentPlayMessage = JSON.parse(localStorage.getItem('currentPlayMessage') || '{}') as TdApi.message;
 	let tdPlayer: PlayerUtils | undefined;
@@ -35,17 +33,8 @@
 			const length = 1024 * 1024; // 1 MB chunk
 			const chunk = await readCurrentVideoFile(offset, length);
 			const blob = new Blob([chunk], { type: "application/octet-stream" });
-			const url = URL.createObjectURL(blob);
-			const a = document.createElement("a");
-			a.href = url;
-			a.download = "video_chunk_3MB-4MB.bin";
-			document.body.appendChild(a);
-			a.click();
-			setTimeout(() => {
-				document.body.removeChild(a);
-				URL.revokeObjectURL(url);
-			}, 1000);
 			console.log("Download started: 1MB chunk from 3MB mark");
+			console.log(chunk);
 		} catch (err) {
 			console.error("Failed to download chunk:", err);
 		}
@@ -74,12 +63,29 @@
 			.then((r) => {
 				if (r['@type'] === 'message') {
 					let msg = r as unknown as TdApi.message;
-					const msgDoc = msg?.content as TdApi.messageDocument;
-					try {
-						window.electronAPI.videoReady(msgDoc.document.document.size);
-					} catch (e) {
-						console.log(e);
-						status = 'Browser is not supported. Please use Windows Client to play the video.';
+					let fileId = 0;
+					if(msg.content['@type'] == "messageDocument") fileId = (msg.content as TdApi.messageDocument).document.document.id;
+					if(msg.content['@type'] == "messageVideo") fileId = (msg.content as TdApi.messageVideo).video.video.id;
+					console.log(fileId);
+					if(fileId>0){
+						tdClientManager.getClient().send({
+							'@type': 'getFile',
+							file_id: fileId,
+						} as TdApi.getFile as TdObject).then((r)=>{
+							console.log(r);
+							let file = r as unknown as TdApi.File ;
+							try {
+								window.electronAPI.videoReady(file.size);
+							} catch (e) {
+								console.log(e);
+								status = 'Browser is not supported. Please use Windows Client to play the video.';
+							}
+						});
+
+						console.log('File id dasdopjasdjapsdjaskjdalksj', fileId);
+
+					}else {
+						status = 'File not supported or corrupted.';
 					}
 				}
 			});
@@ -92,7 +98,7 @@
 </script>
 
 <div
-	class="h-dvh w-dvw justify-center items-center flex flex-col md:flex-row bg-gradient-to-b from-[#334242] to-[#181918]">
+	class="h-full w-full bg-secondary-500 justify-center items-center flex flex-col md:flex-row bg-gradient-to-b from-[#334242] to-[#181918]">
 	<div class="flex-col gap-4 flex items-center justify-center">
 		<MessageItemWrapper client={tdClientManager.getClient()} messageItem={currentPlayMessage} />
 

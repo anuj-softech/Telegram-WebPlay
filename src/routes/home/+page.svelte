@@ -10,6 +10,7 @@
 	import ChatView from '$lib/components/ChatView.svelte';
 
 	import type { LayoutLoad } from '../$lib/types';
+	import Player from '$lib/components/Player.svelte';
 
 	let { data } = $props<{ data: LayoutLoad }>();
 	let tdClientManager: TdClientManager = data.tdClientManager as TdClientManager;
@@ -62,7 +63,8 @@
 			retry--;
 		}
 		pushState('', {
-			showChat: false
+			showChat: false,
+			showPlayer: false,
 		});
 		showList();
 		setCallBack();
@@ -73,14 +75,16 @@
 		currentChat = chatItem;
 		console.log(chatItem);
 		pushState('', {
-			showChat: true
+			showChat: true,
+			showPlayer: false
 		});
 	}
 
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	function closeChat() {
 		pushState('', {
-			showChat: false
+			showChat: false,
+			showPlayer: false
 		});
 	}
 
@@ -113,6 +117,12 @@
 		</div>
 	</div>
 	{#if currentChat && page.state.showChat}
-		<ChatView currentChat={currentChat} className="absolute w-svw h-svh bg-gradient-to-b from-[#334242] to-[#181918]" />
+		<ChatView currentChat={currentChat} client={client}
+							className="absolute w-svw h-svh bg-gradient-to-b from-[#334242] to-[#181918]" />
+	{/if}
+	{#if page.state.showPlayer}
+		<div class="z-30 absolute p-4 bg-surface-dark rounded-3xl ">
+			<Player tdClientManager={tdClientManager} />
+		</div>
 	{/if}
 </div>

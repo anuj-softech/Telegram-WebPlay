@@ -15,12 +15,144 @@ class TdClientManager {
 			console.log(update['@type']);
 		}
 	};
+	private errorListeners: Array<(err: string) => void> = [];
+	private workerError: string | null = null;
 	private initStatus: boolean = false;
 
 	private constructor() {
 		const options_tg = options as TdOptions;
 		options_tg.onUpdate = (update) => this.onUpdate(update);
 		this.tdClient = new TdClient(options_tg);
+
+		// Listen for Web Worker fatal crashes (e.g. Wasm abort or binlog CRC mismatch)
+		const worker = (this.tdClient as any)?.worker as Worker | undefined;
+		if (worker && typeof worker.addEventListener === 'function') {
+			worker.addEventListener('error', (event: ErrorEvent) => {
+				const errorMsg = event?.message || 'TDLib Web Worker fatal error (possible binlog CRC mismatch)';
+				console.error('TDLib Web Worker error detected:', errorMsg, event);
+				this.workerError = errorMsg;
+				this.notifyError(errorMsg);
+			});
+		}
+
+		if (typeof window !== 'undefined') {
+			// Attach helper to window for quick console recovery
+			(window as any).resetTdlibDatabase = TdClientManager.resetLocalDatabase;
+
+			// Attempt graceful TDLib close on window unload to prevent binlog tear
+			window.addEventListener('beforeunload', () => {
+				try {
+					if (this.tdClient && typeof (this.tdClient as any).close === 'function') {
+						(this.tdClient as any).close();
+					}
+				} catch (e) {
+					console.warn('Could not cleanly close TDLib on unload:', e);
+				}
+			});
+		}
+	}
+
+	public getLastError(): string | null {
+		return this.workerError;
+	}
+
+	public onError(cb: (err: string) => void): () => void {
+		this.errorListeners.push(cb);
+		if (this.workerError) {
+			cb(this.workerError);
+		}
+		return () => {
+			this.errorListeners = this.errorListeners.filter((listener) => listener !== cb);
+		};
+	}
+
+	private notifyError(err: string) {
+		for (const listener of this.errorListeners) {
+			try {
+				listener(err);
+			} catch (e) {
+				console.error('Error in error listener:', e);
+			}
+		}
+	}
+
+	public destroy(): void {
+		try {
+			const worker = (this.tdClient as any)?.worker as Worker | undefined;
+			if (worker && typeof worker.terminate === 'function') {
+				worker.terminate();
+			}
+		} catch (e) {
+			console.warn('Failed to terminate worker:', e);
+		}
+	}
+
+	public static async resetLocalDatabase(): Promise<void> {
+		console.log('Initiating TDLib local database reset...');
+		if (TdClientManager.myInstance) {
+			TdClientManager.myInstance.destroy();
+			TdClientManager.myInstance = null;
+		}
+
+		// 1. Electron-level storage purge if running in Electron
+		if (typeof window !== 'undefined' && (window as any).electronAPI?.clearStorage) {
+			try {
+				await (window as any).electronAPI.clearStorage();
+				console.log('Electron session storage cleared.');
+			} catch (e) {
+				console.warn('Could not clear Electron storage via IPC:', e);
+			}
+		}
+
+		// 2. Delete all IndexedDB tables used by TDLib
+		if (typeof window !== 'undefined' && window.indexedDB) {
+			const targetDbs = new Set<string>([
+				'/tdlib/dbfs',
+				'tdlib',
+				'/tdlib/inboundfs',
+				'tdlib_files',
+				'tdlib-dbfs'
+			]);
+
+			if (typeof window.indexedDB.databases === 'function') {
+				try {
+					const existingDbs = await window.indexedDB.databases();
+					for (const db of existingDbs) {
+						if (db.name && (db.name.includes('tdlib') || db.name.startsWith('/tdlib'))) {
+							targetDbs.add(db.name);
+						}
+					}
+				} catch (e) {
+					console.warn('Failed to list indexedDB databases:', e);
+				}
+			}
+
+			const deletions = Array.from(targetDbs).map((name) => {
+				return new Promise<void>((resolve) => {
+					try {
+						const req = window.indexedDB.deleteDatabase(name);
+						req.onsuccess = () => {
+							console.log(`Deleted IndexedDB: ${name}`);
+							resolve();
+						};
+						req.onerror = () => {
+							console.warn(`Failed to delete IndexedDB: ${name}`);
+							resolve();
+						};
+						req.onblocked = () => {
+							console.warn(`Deletion blocked for IndexedDB: ${name}`);
+							resolve();
+						};
+					} catch (e) {
+						console.error(`Error requesting deletion for ${name}:`, e);
+						resolve();
+					}
+				});
+			});
+
+			await Promise.all(deletions);
+			console.log('All TDLib IndexedDB databases reset.');
+		}
 	}
 
 	public isInitialized(): boolean {
@@ -125,7 +257,7 @@ class TdClientManager {
 			.send({
 				'@type': 'setOption',
 				name: 'use_ipv6',
-				value: {value:false,'@type':'optionValueBoolean'} as  TdApi.optionValueBoolean
+				value: {value:true,'@type':'optionValueBoolean'} as  TdApi.optionValueBoolean
 			} as TdApi.setOption as unknown as TdObject)
 			.then((r) => {
 				console.log(r);

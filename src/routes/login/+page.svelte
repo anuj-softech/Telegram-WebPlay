@@ -3,7 +3,7 @@
 	import TdClient, { type TdObject } from 'tdweb';
 	import { type TdApi } from '$lib/types/td_api';
 	import { goto } from '$app/navigation';
-	import type TdClientManager from '$lib/TdClientManager';
+	import TdClientManager from '$lib/TdClientManager';
 
 	import type { LayoutLoad } from '../$lib/types';
 	let { data } = $props<{data:LayoutLoad}>();
@@ -57,22 +57,37 @@
 
 <div class="h-dvh w-dvw flex flex-col md:flex-row bg-gradient-to-b from-[#334242] to-[#181918]">
 	<div class="flex-1 flex flex-row md:flex-col items-center justify-center gap-4 md:gap-10">
-		<img class="shadow-[0_0_100px_#A7BA88] object-cover rounded-full size-10 md:size-50" src="./logo.svg" alt="logo">
+		<img class="object-cover rounded-full size-10 md:size-50 border border-slate-700/50 shadow-md" src="./logo.svg" alt="logo">
 		<p class="text-white text-2xl md:text-5xl font-semibold">Login Existing Account</p>
 	</div>
 	<div class="flex-6 -translate-y-10 md:translate-y-0 flex-col gap-6 md:flex-1 justify-center items-center flex">
 		<p class="text-white md:mb-20 text-2xl md:text-5xl font-semibold">Mobile login</p>
 		{#if !otpSent}
 			<input bind:value={phoneNumber} placeholder="mobile number with country code"
-						 class="w-[90%] h-12 bg-[#D9D9D950] rounded-full pl-4 text-white placeholder-gray-400">
+						 class="w-[90%] h-12 bg-[#D9D9D950] rounded-full pl-4 text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-primary-400">
 
 		{:else}
 			<input bind:value={otpNumber} type="string" placeholder="enter otp sent on telegram"
-						 class="w-[90%] h-12 bg-[#D9D9D950] rounded-full pl-4 text-white placeholder-gray-400">
+						 class="w-[90%] h-12 bg-[#D9D9D950] rounded-full pl-4 text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-primary-400">
 		{/if}
 		<button onclick={onMainBtnClick}
-						class="w-[90%] h-12 bg-primary-400 rounded-full pl-4 text-white placeholder-gray-400">
+						class="w-[90%] h-12 bg-primary-400 hover:bg-opacity-90 active:scale-[0.99] rounded-full text-white font-medium transition cursor-pointer">
 			{btnFunc}
 		</button>
+		<div class="flex gap-4 items-center text-xs text-slate-400 mt-2">
+			<a href="/configure" class="hover:text-primary-400 transition">Change API Keys</a>
+			<span>•</span>
+			<button
+				onclick={async () => {
+					if (confirm('Clear local TDLib session and reset database?')) {
+						await TdClientManager.resetLocalDatabase();
+						window.location.reload();
+					}
+				}}
+				class="hover:text-red-400 transition cursor-pointer"
+			>
+				Reset Session Cache
+			</button>
+		</div>
 	</div>
 </div>

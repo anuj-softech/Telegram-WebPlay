@@ -104,7 +104,7 @@
 <div class="h-dvh w-dvw flex flex-col bg-gradient-to-b from-[#334242] to-[#181918]">
 	<div
 		class="px-9 pt-8 rounded-b-2xl absolute top-0 w-full pb-4 flex flex-row items-center gap-4 md:gap-10 backdrop-blur-2xl bg-[#22334422]">
-		<img class="shadow-[0_0_100px_#A7BA88] object-cover rounded-full size-10" src="./logo.svg" alt="logo">
+		<img class="object-cover rounded-full size-10 border border-[#ffffff15]" src="./logo.svg" alt="logo">
 		<p class="text-white text-3xl pl-2 font-semibold">Chats</p>
 		<button class="h-10 absolute bg-[#00000022] p-2 rounded-2xl text-red-200 right-10" onclick={logout}>Logout</button>
 	</div>
@@ -121,7 +121,7 @@
 							className="absolute w-svw h-svh bg-gradient-to-b from-[#334242] to-[#181918]" />
 	{/if}
 	{#if page.state.showPlayer}
-		<div class="z-30 absolute p-4 bg-surface-dark rounded-3xl ">
+		<div class="z-40 fixed inset-0 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
 			<Player tdClientManager={tdClientManager} />
 		</div>
 	{/if}
